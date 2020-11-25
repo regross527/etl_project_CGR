@@ -1,10 +1,8 @@
-#!/usr/bin/env python
-# coding: utf-8
-
-get_ipython().system('git status')
-
-# Import Module
+# Import Modules
 import pandas as pd
+import json
+import pymongo
+
 
 # Import Fangraphs csv file.
 file_to_load = "../FanGraphs_Leaderboards_2019_hitters-no_spaces.csv"
@@ -35,10 +33,15 @@ bref_df.head(30)
 # Check to make sure all players match
 bref_df.merge(fangraphs_df, 'outer', indicator=True, on='Player').query('_merge != "both"')
 
-#create csv files of the final data
+# create csv files of the final data
 bref_df.to_csv('../02_transform_bbref/bbrefdataFINAL.csv')
 fangraphs_df.to_csv('fangraphsFINAL.csv')
 
+# put the data directly into mongodb
+myclient = pymongo.MongoClient("mongodb://localhost:27017/")
+db = myclient['ETL_baseball']
+records = json.loads(bref_df.T.to_json()).values()
+db.bref.insert(records)
 
-
-
+records = json.loads(fangraphs_df.T.to_json()).values()
+db.fangraphs.insert(records)
